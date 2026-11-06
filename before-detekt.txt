@@ -1,0 +1,11 @@
+Before: original e216d7c with only the five requested baseline entries removed.
+Extracted verbatim finding messages from the actual Detekt run:
+
+Class 'ExploreListRootFragment' with '12' functions detected. Defined threshold inside classes is set to '11' [TooManyFunctions]
+Class 'ExploreMapRootFragment' with '15' functions detected. Defined threshold inside classes is set to '11' [TooManyFunctions]
+Class 'ExploreMapPresenter' with '14' functions detected. Defined threshold inside classes is set to '11' [TooManyFunctions]
+Class 'BasePagingFragment' with '13' functions detected. Defined threshold inside classes is set to '11' [TooManyFunctions]
+Class 'SearchActivity' with '14' functions detected. Defined threshold inside classes is set to '11' [TooManyFunctions]
+
+> Task :app:detekt FAILED
+Analysis failed with 5 weighted issues.

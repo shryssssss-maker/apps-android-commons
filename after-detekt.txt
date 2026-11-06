@@ -1,0 +1,8 @@
+After: fixed source restored after all four reversion checks.
+Excerpt from the actual positive-control Detekt output:
+
+> Task :app:detekt FROM-CACHE
+BUILD SUCCESSFUL in 2m 19s
+1 actionable task: 1 from cache
+
+The cached success is keyed to the refactored source. Restoring the original source for each group separately produced its exact expected TooManyFunctions finding(s); restoring the fixed source passed again.
