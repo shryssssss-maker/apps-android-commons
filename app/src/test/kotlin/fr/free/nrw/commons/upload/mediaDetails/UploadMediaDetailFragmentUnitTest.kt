@@ -4,11 +4,13 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
 import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -56,8 +58,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.LooperMode
 import org.robolectric.shadows.ShadowActivity
+import org.robolectric.shadows.ShadowAlertDialog
 import org.robolectric.shadows.ShadowIntent
 import java.io.File
 import java.lang.reflect.Method
@@ -207,6 +211,56 @@ class UploadMediaDetailFragmentUnitTest {
         val tallBounds = checkNotNull(preview.displayRect)
         Assert.assertEquals(50f, tallBounds.left, 0.01f)
         Assert.assertEquals(350f, tallBounds.right, 0.01f)
+    }
+
+    @Test
+    @Config(sdk = [33], qualifiers = "ja-rJP-w360dp-h640dp-mdpi")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun japaneseTitleKeepsInfoIconVisibleAndUsable() {
+        shadowOf(Looper.getMainLooper()).idle()
+        fragment.recentLanguagesDao = mock()
+        fragment.presenter = presenter
+        Whitebox.setInternalState(fragment, "fragmentCallback", callback)
+        `when`(callback.totalNumberOfSteps).thenReturn(4)
+
+        val content = fragment.onCreateView(layoutInflater, null, null)
+        fragment.initializeFragment()
+        val width = View.MeasureSpec.makeMeasureSpec(360, View.MeasureSpec.EXACTLY)
+        val height = View.MeasureSpec.makeMeasureSpec(640, View.MeasureSpec.EXACTLY)
+        content.measure(width, height)
+        content.layout(0, 0, content.measuredWidth, content.measuredHeight)
+
+        val header = content.findViewById<ViewGroup>(R.id.ll_container_title)
+        val title = header.findViewById<TextView>(R.id.tv_title)
+        val info = header.findViewById<ImageView>(R.id.tooltip)
+        val expand = header.findViewById<AppCompatImageButton>(R.id.ib_expand_collapse)
+        val titleBounds = Rect(0, 0, title.width, title.height)
+        val infoBounds = Rect(0, 0, info.width, info.height)
+        val expandBounds = Rect(0, 0, expand.width, expand.height)
+        header.offsetDescendantRectToMyCoords(title, titleBounds)
+        header.offsetDescendantRectToMyCoords(info, infoBounds)
+        header.offsetDescendantRectToMyCoords(expand, expandBounds)
+
+        val visibleInfoBounds = Rect()
+        Assert.assertTrue(
+            "Info icon should be fully visible (title=$titleBounds, info=$infoBounds, expand=$expandBounds)",
+            info.getLocalVisibleRect(visibleInfoBounds) && visibleInfoBounds.width() == info.width,
+        )
+        Assert.assertTrue(Rect(0, 0, header.width, header.height).contains(infoBounds))
+        Assert.assertTrue(titleBounds.right <= infoBounds.left)
+        Assert.assertTrue(infoBounds.right <= expandBounds.left)
+        Assert.assertTrue(title.layout.height <= title.height)
+
+        Assert.assertTrue(info.performClick())
+        val dialog = ShadowAlertDialog.getLatestAlertDialog()
+        Assert.assertEquals(activity.getString(R.string.media_details_tooltip), shadowOf(dialog).message)
+        Assert.assertTrue(fragment.isExpanded)
+        dialog.dismiss()
+
+        Assert.assertTrue(header.performClick())
+        Assert.assertFalse(fragment.isExpanded)
+        Assert.assertTrue(header.performClick())
+        Assert.assertTrue(fragment.isExpanded)
     }
 
     @Test
